@@ -1,0 +1,2 @@
+# weekly coding hackatonS
+*wow!*
