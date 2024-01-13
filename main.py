@@ -44,9 +44,9 @@ def load_level(level):
 
 def count_score(x):  # TODO: Сделать НОРМАЛЬНЫЙ подсчет очков
     if abs(int((3 / x) * 100)) < 500:
-        return abs(int((3 / x) * 100))
+        return abs(int((3 / x) * 100)) * 10
     else:
-        return 500
+        return 700
 
 
 def clamp(n, min, max):
@@ -65,7 +65,7 @@ def cord(s, t):
 class ParticleText():
 
     def __init__(self, pos, dx, dy, text):
-        self.my_font = pygame.font.SysFont('Comic Sans MS', 50)
+        self.font = pygame.font.SysFont('Comic Sans MS', 50)
         self.text = text
 
         self.velocity = [dx, dy]
@@ -83,7 +83,7 @@ class ParticleText():
             del self
 
     def render(self, surface):
-        rendered = self.my_font.render(self.text, True, 'white')
+        rendered = self.font.render(self.text, True, 'white')
         surface.blit(rendered, (self.x, self.y))
 
 # ЫГРА
@@ -95,6 +95,7 @@ screen = pygame.display.set_mode(resolution)
 clock = pygame.time.Clock()
 pygame.font.init()
 my_font = pygame.font.SysFont('Comic Sans MS', 30)
+note_font = pygame.font.SysFont('Arial', 50)
 
 
 load_level(LEVEL)
@@ -196,7 +197,7 @@ while running:
                                     score -= 100
                                     do_voice = False
                                     marks.append(ParticleText((450, 300),
-                                                              random.uniform(-4000, 4000), -3000, 'Лох'))
+                                                              random.uniform(-4000, 4000), -3000, 'Мимо'))
                                 notes[i]['done'] = True
                                 break
 
@@ -204,29 +205,39 @@ while running:
                     match j:
                         case 'q':
                             offset = 50
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'w':
                             offset = 125
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'e':
                             offset = 200
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'r':
                             offset = 275
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'й':
                             offset = 50 + 450
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'ц':
                             offset = 125 + 450
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'у':
                             offset = 200 + 450
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case 'к':
                             offset = 275 + 450
+                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, height))
                         case None:
                             continue
-                    if j:
-                        if not notes[i]['done']:
-                            if cord(i[0], t) + 100 > 75:
-                                pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t) + 100), 20)
                     if i[0] != i[1] and cord(i[1], t) > 0:
                         pygame.draw.line(screen, COLORS[j], (offset, clamp(cord(i[0], t) + 100, 100, 1000)),
                                          (offset, clamp(cord(i[1], t) + 100, 100, 1000)), width=10)
+                    if j:
+                        if not notes[i]['done']:
+                            if cord(i[0], t) + 100 > 75:
+                                pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t) + 100), 30)
+                                letter = note_font.render(j.upper(), False, 'black')
+                                screen.blit(letter, (offset - 20, cord(i[0], t) + 100 - 25))
     time_surface = my_font.render(str(round(t, 2)), False, 'white')
     score_note = my_font.render(str(score), True, 'grey')
     screen.blit(time_surface, (0, 0))
