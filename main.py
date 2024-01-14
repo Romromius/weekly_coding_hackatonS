@@ -1,3 +1,4 @@
+import os
 import random
 
 import winsound
@@ -23,27 +24,27 @@ def load_level(level):
 
     notes = {}
     for i in labels:
-        letter = i[-1]
-        if letter == '|':
+        let = i[-1]
+        if let == '|':
             pl = True
             continue
         if pl:
-            match letter:
+            match let:
                 case 'q':
-                    letter = 'й'
+                    let = 'й'
                 case 'w':
-                    letter = 'ц'
+                    let = 'ц'
                 case 'e':
-                    letter = 'у'
+                    let = 'у'
                 case 'r':
-                    letter = 'к'
-        notes[(float(i[0]), float(i[1]))] = {'note': letter, 'done': False}
+                    let = 'к'
+        notes[(float(i[0]), float(i[1]))] = {'note': let, 'done': False}
     winsound.Beep(700, 200)
     print(notes)
 
 
 def count_score(x):  # TODO: Сделать НОРМАЛЬНЫЙ подсчет очков
-    if abs(int((3 / x) * 100)) < 500:
+    if abs(int((3 / x) * 100)) < 700:
         return abs(int((3 / x) * 100)) * 10
     else:
         return 700
@@ -97,6 +98,9 @@ pygame.font.init()
 my_font = pygame.font.SysFont('Comic Sans MS', 30)
 note_font = pygame.font.SysFont('Arial', 50)
 
+SOUNDS = {}
+for i in os.listdir('data\\music'):
+    SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data\\music\\{i}')
 
 load_level(LEVEL)
 
@@ -107,7 +111,8 @@ input_list = set()
 score = 0
 marks = []
 do_voice = True
-voice_vol = 100
+voice_vol = 1
+pygame.mixer.Channel(2).set_volume(0.5)
 
 running = True
 while running:
@@ -158,10 +163,9 @@ while running:
     # Игровой цик
     pygame.mixer.Channel(1).set_volume(voice_vol)
     if do_voice:
-        voice_vol = 100
+        voice_vol = 1
     else:
         voice_vol = 0
-    print(do_voice, voice_vol)
     t += clock.tick() / 1000
     screen.fill('black')
     pygame.draw.line(screen, 'red', (0, 100), (width, 100))
@@ -176,6 +180,10 @@ while running:
                     if not notes[i]['done']:
                         if cord(i[0], t) + 100 < 75:
                             print('miss')
+                            if i[0] != i[1]:
+                                pygame.mixer.Channel(2).play(SOUNDS['note_hold'])
+                            else:
+                                pygame.mixer.Channel(2).play(SOUNDS['note_miss'])
                             do_voice = False
                             score -= 200
                             marks.append(ParticleText((450, 300), random.uniform(-4000, 4000), -3000, 'Не спи'))
@@ -198,6 +206,10 @@ while running:
                                     do_voice = False
                                     marks.append(ParticleText((450, 300),
                                                               random.uniform(-4000, 4000), -3000, 'Мимо'))
+                                    if i[0] != i[1]:
+                                        pygame.mixer.Channel(2).play(SOUNDS['note_mishold'])
+                                    else:
+                                        pygame.mixer.Channel(2).play(SOUNDS['note_timeout'])
                                 notes[i]['done'] = True
                                 break
 
