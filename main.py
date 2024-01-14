@@ -178,34 +178,35 @@ while running:
                         do_voice = True
                 if j in 'йцукен':
                     if not notes[i]['done']:
-                        if cord(i[0], t) + 100 < 75:
-                            print('miss')
+                        if cord(i[0], t) + 100 < 75:  # Таймаут
                             if i[0] != i[1]:
                                 pygame.mixer.Channel(2).play(SOUNDS['note_hold'])
                             else:
                                 pygame.mixer.Channel(2).play(SOUNDS['note_miss'])
                             do_voice = False
                             score -= 200
-                            marks.append(ParticleText((450, 300), random.uniform(-4000, 4000), -3000, 'Не спи'))
+                            marks.append(ParticleText((450, 300), random.uniform(-4000, 4000), -3000,
+                                                      random.choice('Поздно/Не успел.../Ты опоздал!/Слишком долго.../ПРОСНИСЬ!/Не спи'.split('/'))))
 
                             notes[i]['done'] = True
-                        if 75 < cord(i[0], t) + 100 < 125:
+                        if 75 < cord(i[0], t) + 100 < 125:  # Попадание
                             if player_input:
                                 if player_input & set(j):
                                     score += count_score(cord(i[0], t))
                                     do_voice = True
-                                    mark = 'Попал'
+                                    mark = random.choice('Попал/Работает/Хоть что-то/.../Старайся лучше'.split('/'))
                                     if 85 < cord(i[0], t) + 100 < 115:
-                                        mark = 'Неплох'
+                                        mark = random.choice('Неплох/Можно лучше./Пойдет/Сойдет/Норм'.split('/'))
                                     if 95 < cord(i[0], t) + 100 < 105:
-                                        mark = 'ИДЕАЛЬНО'
+                                        mark = random.choice('ИДЕАЛЬНО/В точку!/Ай да молодец!/16 Мегабайт!'.split('/'))
                                     marks.append(ParticleText((450, 300),
                                                               random.uniform(-4000, 4000), -3000, mark))
-                                else:
+                                else:  # Промах
                                     score -= 100
                                     do_voice = False
                                     marks.append(ParticleText((450, 300),
-                                                              random.uniform(-4000, 4000), -3000, 'Мимо'))
+                                                              random.uniform(-4000, 4000), -3000,
+                                                              random.choice('Мимо/Как так?/SyntaxError/Разуй глаза/Ну ты чё'.split('/'))))
                                     if i[0] != i[1]:
                                         pygame.mixer.Channel(2).play(SOUNDS['note_mishold'])
                                     else:
