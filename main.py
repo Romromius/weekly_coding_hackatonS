@@ -40,7 +40,6 @@ def load_level(level):
                     let = 'к'
         notes[(float(i[0]), float(i[1]))] = {'note': let, 'done': False}
     winsound.Beep(700, 200)
-    print(notes)
 
 
 def count_score(x):  # TODO: Сделать НОРМАЛЬНЫЙ подсчет очков
