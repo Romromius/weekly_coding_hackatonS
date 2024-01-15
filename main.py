@@ -61,7 +61,7 @@ def load_level(level):
                 case 'r':
                     let = 'к'
         notes[(float(i[0]), float(i[1]))] = {'note': let, 'done': False}
-    winsound.Beep(700, 200)
+    pygame.mixer.Channel(2).play(SOUNDS['loading'])
 
 
 def count_score(x):  # TODO: Сделать НОРМАЛЬНЫЙ подсчет очков
@@ -115,14 +115,15 @@ pygame.init()
 RESOLUTION = WIDTH, HEIGHT = 800, 600
 pygame.init()
 screen = pygame.display.set_mode(RESOLUTION)
+pygame.display.set_icon(pygame.image.load('icon.png'))
 clock = pygame.time.Clock()
 pygame.font.init()
 my_font = pygame.font.SysFont('Comic Sans MS', 30)
 note_font = pygame.font.SysFont('Arial', 50)
 
 SOUNDS = {}
-for i in os.listdir('data\\music'):
-    SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data\\music\\{i}')
+for i in os.listdir('data/sounds'):
+    SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data/sounds\\{i}')
 
 load_level(LEVEL)
 
@@ -151,7 +152,7 @@ while running:
         case 2:
             background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.025)
             background.rect.y = pygame.math.lerp(background.rect.y, 0, 0.025)
-    print(background.rect.x)
+    print(background.target)
 
     # Ивенты
     for event in pygame.event.get():
