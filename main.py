@@ -8,7 +8,7 @@ import pygame
 COLORS = {'q': 'cyan', 'w': 'green', 'e': 'red', 'r': 'yellow',
           'й': 'cyan', 'ц': 'green', 'у': 'red', 'к': 'yellow'}
 GRAVITY = 9.8
-LEVEL = 2
+LEVEL = 'Bobepoo'
 
 
 class Background(pygame.sprite.Sprite):
@@ -25,16 +25,24 @@ def lerp(x, y, s):
 
 
 def load_level(level):
-    global music
-    global voices
-    global notes
+    global music, voices, notes, params, background
     pl = False
 
-    music = pygame.mixer.Sound(f'levels/{level}/music.ogg')
-    voices = pygame.mixer.Sound(f'levels/{level}/voices.ogg')
+    music = pygame.mixer.Sound(f'levels/{level}/{level}_music.ogg')
+    voices = pygame.mixer.Sound(f'levels/{level}/{level}_voices.ogg')
 
-    with open(f'levels/{level}/labels.txt', 'r', encoding='utf-8') as lf:
+    with open(f'levels/{level}/{level}_labels.txt', 'r', encoding='utf-8') as lf:
         labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
+
+    try:
+        with open(f'{level}_params.json', 'r') as params_file:
+            params = json.load(params_file)
+            background = Background(f'data\\sprites\\{params["BG"]}.png')
+            # TODO: player = ...
+            # TODO: enemy = ...
+    except FileNotFoundError:
+        background = Background('data\\sprites\\default_room.png')
+
 
     notes = {}
     for i in labels:
@@ -78,9 +86,10 @@ def cord(s, t):
 
 class ParticleText():
 
-    def __init__(self, pos, dx, dy, text):
+    def __init__(self, pos, dx, dy, text, color='white'):
         self.font = pygame.font.SysFont('Comic Sans MS', 50)
         self.text = text
+        self.color = color
 
         self.velocity = [dx, dy]
         self.x, self.y = self.pos = pos
@@ -89,15 +98,15 @@ class ParticleText():
         # гравитация будет одинаковой (значение константы)
         self.gravity = GRAVITY
 
-    def update(self, tick=0.1):
-        self.velocity[1] += self.gravity
-        self.x += self.velocity[0] / 7000 * clock.get_time()/2
-        self.y += self.velocity[1] / 7000 * clock.get_time()/2
+    def update(self):
+        self.velocity[1] += self.gravity * 10
+        self.x += self.velocity[0] / 3000 * clock.get_time()/2
+        self.y += self.velocity[1] / 3000 * clock.get_time()/2
         if self.pos not in RESOLUTION:
             del self
 
     def render(self, surface):
-        rendered = self.font.render(self.text, True, 'white')
+        rendered = self.font.render(self.text, True, self.color)
         surface.blit(rendered, (self.x, self.y))
 
 # ЫГРА
@@ -125,10 +134,8 @@ score = 0
 marks = []
 do_voice = True
 voice_vol = 1
-pygame.mixer.Channel(2).set_volume(0.5)
 
 all_sprites = pygame.sprite.Group()
-background = Background('data\\sprites\\default_room.png')
 all_sprites.add(background)
 
 running = True
@@ -139,11 +146,11 @@ while running:
         case 0:
             background.rect.center = (WIDTH / 2, HEIGHT / 2)
         case 1:
-            background.rect.x = pygame.math.lerp(background.rect.x, -200, 0.02)
-            background.rect.y = pygame.math.lerp(background.rect.y, -100, 0.02)
+            background.rect.x = pygame.math.lerp(background.rect.x, -200, 0.025)
+            background.rect.y = pygame.math.lerp(background.rect.y, -100, 0.025)
         case 2:
-            background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.02)
-            background.rect.y = pygame.math.lerp(background.rect.y, 0, 0.02)
+            background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.025)
+            background.rect.y = pygame.math.lerp(background.rect.y, 0, 0.025)
     print(background.rect.x)
 
     # Ивенты
@@ -200,7 +207,6 @@ while running:
         voice_vol = 1
     else:
         voice_vol = 0
-    pygame.draw.line(screen, 'red', (0, 100), (WIDTH, 100))
     if play:
         for i in notes:
             for j in notes[i]['note']:
@@ -219,9 +225,9 @@ while running:
                                 pygame.mixer.Channel(2).play(SOUNDS['note_miss'])
                             do_voice = False
                             score -= 200
-                            marks.append(ParticleText((450, 300), random.uniform(-4000, 4000), -2000,
+                            marks.append(ParticleText((450, 300), random.uniform(-2000, 2000), -2000,
                                                       random.choice('Поздно/Не успел.../Ты опоздал!/Слишком долго...'
-                                                                    '/ПРОСНИСЬ!/Не спи'.split('/'))))
+                                                                    '/ПРОСНИСЬ!/Не спи'.split('/')), color='grey'))
 
                             notes[i]['done'] = True
                         if 75 < cord(i[0], t) + 100 < 125:  # Попадание
@@ -236,14 +242,14 @@ while running:
                                     if 95 < cord(i[0], t) + 100 < 105:
                                         mark = random.choice('ИДЕАЛЬНО/В точку!/Ай да молодец!/16 Мегабайт!'.split('/'))
                                     marks.append(ParticleText((450, 300),
-                                                              random.uniform(-4000, 4000), -2000, mark))
+                                                              random.uniform(-2000, 2000), -2000, mark, color='yellow'))
                                 else:  # Промах
                                     score -= 100
                                     do_voice = False
                                     marks.append(ParticleText((450, 300),
-                                                              random.uniform(-4000, 4000), -2000,
+                                                              random.uniform(-2000, 2000), -2000,
                                                               random.choice('Мимо/Как так?/SyntaxError/'
-                                                                            'Разуй глаза/Ну ты чё'.split('/'))))
+                                                                            'Разуй глаза/Ну ты чё'.split('/')), color='red'))
                                     if i[0] != i[1]:
                                         pygame.mixer.Channel(2).play(SOUNDS['note_mishold'])
                                     else:
@@ -255,28 +261,40 @@ while running:
                     match j:
                         case 'q':
                             offset = 50
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            pygame.draw.circle(screen, COLORS['q'], (offset, 100), 35, width=5)
                         case 'w':
                             offset = 125
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            pygame.draw.circle(screen, COLORS['w'], (offset, 100), 35, width=5)
                         case 'e':
                             offset = 200
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            pygame.draw.circle(screen, COLORS['e'], (offset, 100), 35, width=5)
                         case 'r':
                             offset = 275
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            pygame.draw.circle(screen, COLORS['r'], (offset, 100), 35, width=5)
                         case 'й':
-                            offset = 50 + 450
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            offset = WIDTH - 275
+                            if 'й' in input_list:
+                                pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                            else:
+                                pygame.draw.circle(screen, COLORS['й'], (offset, 100), 35, width=5)
                         case 'ц':
-                            offset = 125 + 450
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            offset = WIDTH - 200
+                            if 'ц' in input_list:
+                                pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                            else:
+                                pygame.draw.circle(screen, COLORS['ц'], (offset, 100), 35, width=5)
                         case 'у':
-                            offset = 200 + 450
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            offset = WIDTH - 125
+                            if 'у' in input_list:
+                                pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                            else:
+                                pygame.draw.circle(screen, COLORS['у'], (offset, 100), 35, width=5)
                         case 'к':
-                            offset = 275 + 450
-                            pygame.draw.line(screen, 'grey', (offset, 0), (offset, HEIGHT))
+                            offset = WIDTH - 50
+                            if 'к' in input_list:
+                                pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                            else:
+                                pygame.draw.circle(screen, COLORS['к'], (offset, 100), 35, width=5)
                         case None:
                             continue
                     if i[0] != i[1] and cord(i[1], t) > 0:
