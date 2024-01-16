@@ -84,6 +84,28 @@ def cord(s, t):
     return s * 200 - t * 200
 
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
 class ParticleText():
 
     def __init__(self, pos, dx, dy, text, color='white'):
@@ -127,7 +149,7 @@ for i in os.listdir('data/sounds'):
 
 load_level(LEVEL)
 
-t = 0
+t = -1
 play = False
 player_input = set()
 input_list = set()
@@ -152,7 +174,6 @@ while running:
         case 2:
             background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.025)
             background.rect.y = pygame.math.lerp(background.rect.y, 0, 0.025)
-    print(background.target)
 
     # Ивенты
     for event in pygame.event.get():
@@ -162,10 +183,9 @@ while running:
         # TODO: Меню там, выбор уровня сделать
         if event.type == pygame.KEYDOWN and event.dict['key'] == 32:
             play = not play
-            t = 0
+            t = -2
             if play:
-                pygame.mixer.Channel(0).play(music)
-                pygame.mixer.Channel(1).play(voices)
+                pygame.mixer.Channel(2).play(SOUNDS['321'])
             if not play:
                 pygame.mixer.Channel(0).stop()
                 pygame.mixer.Channel(1).stop()
@@ -203,12 +223,16 @@ while running:
 
 
     # Игровой цик
+    if t >= 0 and not pygame.mixer.Channel(0).get_busy():
+        pygame.mixer.Channel(0).play(music)
+        pygame.mixer.Channel(1).play(voices)
     pygame.mixer.Channel(1).set_volume(voice_vol)
     if do_voice:
         voice_vol = 1
     else:
         voice_vol = 0
     if play:
+        t += clock.get_time() / 1000
         for i in notes:
             for j in notes[i]['note']:
                 if j in 'qwerty' and cord(i[0], t) + 100 < 100:
@@ -317,4 +341,3 @@ while running:
     pygame.display.flip()
     player_input.clear()
     clock.tick(120)
-    t += clock.get_time() / 1000
