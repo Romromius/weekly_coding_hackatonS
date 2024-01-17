@@ -2,7 +2,10 @@ import pygame
 
 
 class Button:
-    def __init__(self, x, y, w, h, text, image_path, indic_path1, indic_path2, sound_path=None):
+    def __init__(self, x, y, w, h, text, image_path="data\\sprites\\empty.png",
+                 indic_path1="data\\sprites\\button_bckgrnd1.png",
+                 indic_path2="data\\sprites\\button_bckgrnd2.png",
+                 sound_path='data\\sounds\\q.ogg'):
         self.x, self.y, self.w, self.h = x, y, w, h
         self.text = text
         self.fl = 0
@@ -59,9 +62,9 @@ def main_menu():
 
     # КНОПКИ СОЗДАНИЕ
     # <<<<<<<<<<<<<<<<<<<<<<<<ЛЮБЫЕ ПУТИ К ЗВУКАМ - ПОСЛЕДНИЙ АРГУМЕНТ>>>>>>>>>>>>>>>>
-    start_button = Button(width / 3.5, height / 5, 0, 0, "начать игру", "empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
-    options_button = Button(width / 3.5, height / 3, 0, 0, "настройки", "empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
-    exit_button = Button(width / 3.5, height / 2, 0, 0, "выйти", "empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
+    start_button = Button(width / 3.5, height / 5, 0, 0, "начать игру")
+    options_button = Button(width / 3.5, height / 3, 0, 0, "настройки")
+    exit_button = Button(width / 3.5, height / 2, 0, 0, "выйти")
     buttons = [start_button, options_button, exit_button]
 
     running = True
@@ -84,9 +87,9 @@ def main_menu():
 def settings():
     BACK = pygame.image.load("begin_window_backgr.png")
     # КНОПКИ СОЗДАНИЕ
-    difficulty_button = Button(width / 3, height / 5, 0, 0, "сложность:", "empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
-    theme_button = Button(width / 3, height / 3.5, 0, 0, "тема:", "empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
-    sissounds_button = Button(width / 3.5, height / 2.7, 0, 0, "СИС.ЗВУКИ: ", "empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
+    difficulty_button = Button(width / 3, height / 5, 0, 0, "сложность:", "data/sprites/empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
+    theme_button = Button(width / 3, height / 3.5, 0, 0, "тема:", "data/sprites/empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
+    sissounds_button = Button(width / 3.5, height / 2.7, 0, 0, "СИС.ЗВУКИ: ", "data/sprites/empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
 
     running = True
     while running:
