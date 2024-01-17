@@ -1,6 +1,6 @@
 import os
 import random
-
+import json
 import winsound
 
 import pygame
@@ -20,12 +20,8 @@ class Background(pygame.sprite.Sprite):
         self.target = 0
 
 
-def lerp(x, y, s):
-    return x * (1 - s) + y * s
-
-
 def load_level(level):
-    global music, voices, notes, params, background
+    global music, voices, notes, params, background, player
     pl = False
 
     music = pygame.mixer.Sound(f'levels/{level}/{level}_music.ogg')
@@ -34,14 +30,16 @@ def load_level(level):
     with open(f'levels/{level}/{level}_labels.txt', 'r', encoding='utf-8') as lf:
         labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
 
-    try:
-        with open(f'{level}_params.json', 'r') as params_file:
+    # try:
+        with open(f'levels\\{level}\\{level}_params.json', 'r') as params_file:
             params = json.load(params_file)
             background = Background(f'data\\sprites\\{params["BG"]}.png')
-            # TODO: player = ...
+            player = AnimatedSprite(pygame.image.load(f'data\\sprites\\{params["PLAYER"]}.png'), 2, 1, 50, 50)
+
             # TODO: enemy = ...
-    except FileNotFoundError:
-        background = Background('data\\sprites\\default_room.png')
+    # except FileNotFoundError:
+    #     background = Background('data\\sprites\\default_room.png')
+    #     player = AnimatedSprite(pygame.image.load(f'data\\sprites\\missed_image.png'), 1, 1, HEIGHT / 2, WIDTH - 100)
 
 
     notes = {}
@@ -84,6 +82,30 @@ def cord(s, t):
     return s * 200 - t * 200
 
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__()
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+        self.phase = 0
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self):
+        # self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.cur_frame = int(self.phase - len(self.frames) * (self.phase // len(self.frames)))
+        self.image = self.frames[self.cur_frame]
+
 class ParticleText():
 
     def __init__(self, pos, dx, dy, text, color='white'):
@@ -109,11 +131,11 @@ class ParticleText():
         rendered = self.font.render(self.text, True, self.color)
         surface.blit(rendered, (self.x, self.y))
 
-# ЫГРА
+
+# ~~~  ЫГРА  ~~~
 
 pygame.init()
 RESOLUTION = WIDTH, HEIGHT = 800, 600
-pygame.init()
 screen = pygame.display.set_mode(RESOLUTION)
 pygame.display.set_icon(pygame.image.load('icon.png'))
 clock = pygame.time.Clock()
@@ -125,9 +147,8 @@ SOUNDS = {}
 for i in os.listdir('data/sounds'):
     SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data/sounds\\{i}')
 
-load_level(LEVEL)
 
-t = 0
+t = -1
 play = False
 player_input = set()
 input_list = set()
@@ -135,24 +156,35 @@ score = 0
 marks = []
 do_voice = True
 voice_vol = 1
+load_level('Bobepoo')
 
 all_sprites = pygame.sprite.Group()
-all_sprites.add(background)
+background_group = pygame.sprite.Group()
+all_sprites.add(player)
+background_group.add(background)
+background.target = 1
 
 running = True
 while running:
+    player.phase = t * params['BPM'] / 60
+    player.update()
     screen.fill('black')
+    background_group.draw(screen)
     all_sprites.draw(screen)
     match background.target:
         case 0:
             background.rect.center = (WIDTH / 2, HEIGHT / 2)
+            player.rect.center = (WIDTH / 2, HEIGHT / 2)
         case 1:
-            background.rect.x = pygame.math.lerp(background.rect.x, -200, 0.025)
+            background.rect.x = pygame.math.lerp(background.rect.x, -200, 0.0125)
             background.rect.y = pygame.math.lerp(background.rect.y, -100, 0.025)
+            player.rect.x = pygame.math.lerp(player.rect.x, 500, 0.0125)
+            player.rect.y = pygame.math.lerp(player.rect.y, 200, 0.025)
         case 2:
-            background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.025)
+            background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.0125)
             background.rect.y = pygame.math.lerp(background.rect.y, 0, 0.025)
-    print(background.target)
+            player.rect.x = pygame.math.lerp(player.rect.x, 700, 0.0125)
+            player.rect.y = pygame.math.lerp(player.rect.y, 300, 0.025)
 
     # Ивенты
     for event in pygame.event.get():
@@ -162,10 +194,9 @@ while running:
         # TODO: Меню там, выбор уровня сделать
         if event.type == pygame.KEYDOWN and event.dict['key'] == 32:
             play = not play
-            t = 0
+            t = -2
             if play:
-                pygame.mixer.Channel(0).play(music)
-                pygame.mixer.Channel(1).play(voices)
+                pygame.mixer.Channel(2).play(SOUNDS['321'])
             if not play:
                 pygame.mixer.Channel(0).stop()
                 pygame.mixer.Channel(1).stop()
@@ -203,12 +234,16 @@ while running:
 
 
     # Игровой цик
+    if t >= 0 and not pygame.mixer.Channel(0).get_busy():
+        pygame.mixer.Channel(0).play(music)
+        pygame.mixer.Channel(1).play(voices)
     pygame.mixer.Channel(1).set_volume(voice_vol)
     if do_voice:
         voice_vol = 1
     else:
         voice_vol = 0
     if play:
+        t += clock.get_time() / 1000
         for i in notes:
             for j in notes[i]['note']:
                 if j in 'qwerty' and cord(i[0], t) + 100 < 100:
@@ -307,7 +342,7 @@ while running:
                                 pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t) + 100), 30)
                                 letter = note_font.render(j.upper(), False, 'black')
                                 screen.blit(letter, (offset - 20, cord(i[0], t) + 100 - 25))
-    time_surface = my_font.render(str(round(t, 2)), False, 'white')
+    time_surface = my_font.render(str(round(t, 2)), False, 'grey')
     score_note = my_font.render(str(score), True, 'grey')
     screen.blit(time_surface, (0, 0))
     screen.blit(score_note, (400, 300))
@@ -317,4 +352,3 @@ while running:
     pygame.display.flip()
     player_input.clear()
     clock.tick(120)
-    t += clock.get_time() / 1000
