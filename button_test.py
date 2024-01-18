@@ -58,7 +58,7 @@ pygame.display.set_icon(ICON)
 
 
 def main_menu():
-    BACK = pygame.image.load("start_window_backgr.png")
+    BACK = pygame.image.load("data/sprites/start_window_background.png")
 
     # КНОПКИ СОЗДАНИЕ
     # <<<<<<<<<<<<<<<<<<<<<<<<ЛЮБЫЕ ПУТИ К ЗВУКАМ - ПОСЛЕДНИЙ АРГУМЕНТ>>>>>>>>>>>>>>>>
@@ -85,7 +85,7 @@ def main_menu():
 
 
 def settings():
-    BACK = pygame.image.load("begin_window_backgr.png")
+    BACK = pygame.image.load("data/sprites/begin_window_background.png")
     # КНОПКИ СОЗДАНИЕ
     difficulty_button = Button(width / 3, height / 5, 0, 0, "сложность:", "data/sprites/empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
     theme_button = Button(width / 3, height / 3.5, 0, 0, "тема:", "data/sprites/empty.png", "button_bckgrnd1.png", "button_bckgrnd2.png")
