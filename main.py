@@ -11,8 +11,8 @@ pygame.init()
 # Константы
 RESOLUTION = WIDTH, HEIGHT = 800, 600
 GRAVITY = 9.8
-COLORS = {'q': 'cyan', 'w': 'green', 'e': 'red', 'r': 'yellow',
-          'й': 'cyan', 'ц': 'green', 'у': 'red', 'к': 'yellow'}
+COLORS = {'q': 'cyan', 'w': 'green', 'e': 'red', 'r': 'yellow', 't': 'purple', 'y': 'blue',
+          'й': 'cyan', 'ц': 'green', 'у': 'red', 'к': 'yellow', 'е': 'purple', 'н': 'blue'}
 SOUNDS = {}
 for i in os.listdir('data/sounds'):
     SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data/sounds\\{i}')
@@ -38,8 +38,8 @@ def count_score(x):
         return 700
 
 
-def cord(s, t):
-    return s * 200 - t * 200
+def cord(s, t, bpm):
+    return s * bpm * 3 - t * bpm * 3
 
 
 def roundate(n, range: tuple):
@@ -264,7 +264,7 @@ def freeplay(settings, musics):
                 return
 
             if event.type == bobepoo_event:
-                level(settings, 'Bobepoo')
+                level(settings, 'Philly')
 
             for i in buttons:
                 i.click_event(event)
@@ -332,7 +332,7 @@ def level(settings, lvl):
     play = True
     while running:
         last_phase = phase
-        phase = int(t * settings['bpm'] / 60)
+        phase = int(t * params['BPM'] / 60)
         if phase != last_phase:
             player.phase += 1
             player.update()
@@ -423,11 +423,12 @@ def level(settings, lvl):
             t += clock.get_time() / 1000
             for i in notes:
                 for j in notes[i]['note']:
-                    if j in 'qwerty' and cord(i[0], t) + 100 < 100:
+                    if j in 'qwerty' and cord(i[0], t, params['BPM']) + 100 < 100:
                         if not notes[i]['done']:
                             notes[i]['done'] = True
                             do_voice = True
                             background.target = 2
+                            enemy.update()
                             match notes[i]['note']:
                                 case 'q':
                                     enemy.phase = 2
@@ -444,7 +445,7 @@ def level(settings, lvl):
 
                     if j in 'йцукен':
                         if not notes[i]['done']:
-                            if cord(i[0], t) + 100 < 75:  # Таймаут
+                            if cord(i[0], t, params['BPM']) + 100 < 75:  # Таймаут
                                 background.target = 1
                                 if i[0] != i[1]:
                                     pygame.mixer.Channel(2).play(SOUNDS['note_hold'])
@@ -458,16 +459,16 @@ def level(settings, lvl):
                                                               '/ПРОСНИСЬ!/Не спи'.split('/')), color='grey'))
 
                                 notes[i]['done'] = True
-                            if 75 < cord(i[0], t) + 100 < 125:  # Попадание
+                            if 75 < cord(i[0], t, params['BPM']) + 100 < 125:  # Попадание
                                 background.target = 1
                                 if player_input:
                                     if player_input & set(j):
-                                        score += count_score(cord(i[0], t))
+                                        score += count_score(cord(i[0], t, params['BPM']))
                                         do_voice = True
                                         mark = random.choice('Попал/Работает/Хоть что-то/.../Старайся лучше'.split('/'))
-                                        if 85 < cord(i[0], t) + 100 < 115:
+                                        if 85 < cord(i[0], t, params['BPM']) + 100 < 115:
                                             mark = random.choice('Неплох/Можно лучше./Пойдет/Сойдет/Норм'.split('/'))
-                                        if 95 < cord(i[0], t) + 100 < 105:
+                                        if 95 < cord(i[0], t, params['BPM']) + 100 < 105:
                                             mark = random.choice(
                                                 'ИДЕАЛЬНО/В точку!/Ай да молодец!/16 Мегабайт!'.split('/'))
                                         marks.append(ParticleText((450, 300),
@@ -492,51 +493,57 @@ def level(settings, lvl):
                         match j:
                             case 'q':
                                 offset = 50
-                                pygame.draw.circle(screen, COLORS['q'], (offset, 100), 35, width=5)
+                                pygame.draw.circle(screen, COLORS['q'], (offset, 100), 30, width=5)
                             case 'w':
-                                offset = 125
-                                pygame.draw.circle(screen, COLORS['w'], (offset, 100), 35, width=5)
+                                offset = 110
+                                pygame.draw.circle(screen, COLORS['w'], (offset, 100), 30, width=5)
                             case 'e':
-                                offset = 200
-                                pygame.draw.circle(screen, COLORS['e'], (offset, 100), 35, width=5)
+                                offset = 170
+                                pygame.draw.circle(screen, COLORS['e'], (offset, 100), 30, width=5)
                             case 'r':
-                                offset = 275
-                                pygame.draw.circle(screen, COLORS['r'], (offset, 100), 35, width=5)
+                                offset = 230
+                                pygame.draw.circle(screen, COLORS['r'], (offset, 100), 30, width=5)
+                            case 't':
+                                offset = 290
+                                pygame.draw.circle(screen, COLORS['t'], (offset, 100), 30, width=5)
+                            case 'y':
+                                offset = 350
+                                pygame.draw.circle(screen, COLORS['y'], (offset, 100), 30, width=5)
                             case 'й':
                                 offset = WIDTH - 275
                                 if 'й' in input_list:
-                                    pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                                    pygame.draw.circle(screen, 'grey', (offset, 100), 25)
                                 else:
-                                    pygame.draw.circle(screen, COLORS['й'], (offset, 100), 35, width=5)
+                                    pygame.draw.circle(screen, COLORS['й'], (offset, 100), 30, width=5)
                             case 'ц':
                                 offset = WIDTH - 200
                                 if 'ц' in input_list:
-                                    pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                                    pygame.draw.circle(screen, 'grey', (offset, 100), 25)
                                 else:
-                                    pygame.draw.circle(screen, COLORS['ц'], (offset, 100), 35, width=5)
+                                    pygame.draw.circle(screen, COLORS['ц'], (offset, 100), 30, width=5)
                             case 'у':
                                 offset = WIDTH - 125
                                 if 'у' in input_list:
-                                    pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                                    pygame.draw.circle(screen, 'grey', (offset, 100), 25)
                                 else:
-                                    pygame.draw.circle(screen, COLORS['у'], (offset, 100), 35, width=5)
+                                    pygame.draw.circle(screen, COLORS['у'], (offset, 100), 30, width=5)
                             case 'к':
                                 offset = WIDTH - 50
                                 if 'к' in input_list:
-                                    pygame.draw.circle(screen, 'grey', (offset, 100), 30)
+                                    pygame.draw.circle(screen, 'grey', (offset, 100), 25)
                                 else:
-                                    pygame.draw.circle(screen, COLORS['к'], (offset, 100), 35, width=5)
+                                    pygame.draw.circle(screen, COLORS['к'], (offset, 100), 30, width=5)
                             case None:
                                 continue
-                        if i[0] != i[1] and cord(i[1], t) > 0:
-                            pygame.draw.line(screen, COLORS[j], (offset, roundate(cord(i[0], t) + 100, (100, 1000))),
-                                             (offset, roundate(cord(i[1], t) + 100, (100, 1000))), width=10)
+                        if i[0] != i[1] and cord(i[1], t, params['BPM']) > 0:
+                            pygame.draw.line(screen, COLORS[j], (offset, roundate(cord(i[0], t, params['BPM']) + 100, (100, 1000))),
+                                             (offset, roundate(cord(i[1], t, params['BPM']) + 100, (100, 1000))), width=10)
                         if j:
                             if not notes[i]['done']:
-                                if cord(i[0], t) + 100 > 75:
-                                    pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t) + 100), 30)
+                                if cord(i[0], t, params['BPM']) + 100 > 75:
+                                    pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t, params['BPM']) + 100), 30)
                                     letter = font.render(j.upper(), False, 'black')
-                                    screen.blit(letter, (offset - 20, cord(i[0], t) + 100 - 25))
+                                    screen.blit(letter, (offset - 20, cord(i[0], t, params['BPM']) + 100 - 25))
         time_surface = font.render(str(round(t, 2)), False, 'grey')
         score_note = font.render(str(score), True, 'grey')
         screen.blit(time_surface, (0, 0))
