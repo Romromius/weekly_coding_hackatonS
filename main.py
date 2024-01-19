@@ -82,7 +82,7 @@ class ParticleText():
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows, x, y):
+    def __init__(self, sheet, columns, rows, x, y, idles):
         super().__init__()
         self.frames = []
         self.cut_sheet(sheet, columns, rows)
@@ -90,6 +90,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
         self.rect = self.rect.move(x, y)
         self.phase = 0
+        self.idles = idles
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
@@ -101,9 +102,12 @@ class AnimatedSprite(pygame.sprite.Sprite):
                     frame_location, self.rect.size)))
 
     def update(self):
-        # self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        self.cur_frame = int(self.phase - len(self.frames) * (self.phase // len(self.frames)))
-        self.image = self.frames[self.cur_frame]
+        if self.phase > self.idles:
+            self.phase = 0
+        self.image = self.frames[self.phase]
+
+    def liteUpdate(self):
+        self.image = self.frames[self.phase]
 
 
 class Button:
@@ -269,22 +273,26 @@ def freeplay(settings, musics):
             i.check_indic(pygame.mouse.get_pos())
             i.draw(screen)
 
-
         clock.tick(120)
         pygame.display.flip()
 
-def level(settings, level):
+
+def level(settings, lvl):
     pygame.mixer.music.stop()
     clock = pygame.time.Clock()
     # Load level
-    music = pygame.mixer.Sound(f'levels/{level}/{level}_music.ogg')
-    voices = pygame.mixer.Sound(f'levels/{level}/{level}_voices.ogg')
-    with open(f'levels/{level}/{level}_labels.txt', 'r', encoding='utf-8') as lf:
+    music = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_music.ogg')
+    voices = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_voices.ogg')
+    with open(f'levels/{lvl}/{lvl}_labels.txt', 'r', encoding='utf-8') as lf:
         labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
-    with open(f'levels\\{level}\\{level}_params.json', 'r') as params_file:
+    with open(f'levels\\{lvl}\\{lvl}_params.json', 'r') as params_file:
         params = json.load(params_file)
         background = Background(f'data\\sprites\\{params["BG"]}.png')
-        player = AnimatedSprite(pygame.image.load(f'data\\sprites\\{params["PLAYER"]}.png'), 2, 1, 50, 50)
+        player = AnimatedSprite(pygame.image.load(f'data\\sprites\\{params["PLAYER"]}.png'), 3, 2, 800, 600, 1)
+        enemy = AnimatedSprite(pygame.image.load(f'data\\sprites\\{params["ENEMY"]}.png'), 3, 2, 0, 600, 1)
+    all_sprites = pygame.sprite.Group()
+    all_sprites.add(player)
+    all_sprites.add(enemy)
     notes = {}
 
     read_pl = False
@@ -305,12 +313,7 @@ def level(settings, level):
                     let = 'к'
         notes[(float(i[0]), float(i[1]))] = {'note': let, 'done': False}
 
-    # phase = int(t * settings['bpm'] / 60)
-    bobepoo_button = Button(WIDTH / 3.5, HEIGHT / 5, 0, 0, "Bobepoo", play_event, pref='Bobepoo')
-    back_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "Назад", back_event)
-    buttons = [bobepoo_button, back_button]
-
-    t = -3
+    t = -2
     play = False
     player_input = set()
     input_list = set()
@@ -318,18 +321,23 @@ def level(settings, level):
     marks = []
     do_voice = True
     voice_vol = 1
-    all_sprites = pygame.sprite.Group()
     background_group = pygame.sprite.Group()
-    all_sprites.add(player)
     background_group.add(background)
     background.target = 1
     SOUNDS['321'].play()
 
+    phase = int(t * settings['bpm'] / 60)
+
     running = True
     play = True
     while running:
-        player.phase = t * params['BPM'] / 60
-        player.update()
+        last_phase = phase
+        phase = int(t * settings['bpm'] / 60)
+        if phase != last_phase:
+            player.phase += 1
+            player.update()
+            enemy.phase += 1
+            enemy.update()
         screen.fill('black')
         background_group.draw(screen)
         all_sprites.draw(screen)
@@ -342,11 +350,15 @@ def level(settings, level):
                 background.rect.y = pygame.math.lerp(background.rect.y, -100, 0.025)
                 player.rect.x = pygame.math.lerp(player.rect.x, 500, 0.0125)
                 player.rect.y = pygame.math.lerp(player.rect.y, 200, 0.025)
+                enemy.rect.x = pygame.math.lerp(enemy.rect.x, -100, 0.0125)
+                enemy.rect.y = pygame.math.lerp(enemy.rect.y, 200, 0.025)
             case 2:
                 background.rect.x = pygame.math.lerp(background.rect.x, 0, 0.0125)
                 background.rect.y = pygame.math.lerp(background.rect.y, 0, 0.025)
                 player.rect.x = pygame.math.lerp(player.rect.x, 700, 0.0125)
                 player.rect.y = pygame.math.lerp(player.rect.y, 300, 0.025)
+                enemy.rect.x = pygame.math.lerp(enemy.rect.x, 100, 0.0125)
+                enemy.rect.y = pygame.math.lerp(enemy.rect.y, 300, 0.025)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -370,15 +382,23 @@ def level(settings, level):
                     case 'q' | 'й':
                         player_input.add('й')
                         input_list.add('й')
+                        player.phase = 2
+                        player.liteUpdate()
                     case 'w' | 'ц':
                         player_input.add('ц')
                         input_list.add('ц')
+                        player.phase = 3
+                        player.liteUpdate()
                     case 'e' | 'у':
                         player_input.add('у')
                         input_list.add('у')
+                        player.phase = 4
+                        player.liteUpdate()
                     case 'r' | 'к':
                         player_input.add('к')
                         input_list.add('к')
+                        player.phase = 5
+                        player.liteUpdate()
 
             if event.type == pygame.KEYUP:
                 match event.dict['unicode']:
@@ -408,6 +428,20 @@ def level(settings, level):
                             notes[i]['done'] = True
                             do_voice = True
                             background.target = 2
+                            match notes[i]['note']:
+                                case 'q':
+                                    enemy.phase = 2
+                                    enemy.liteUpdate()
+                                case 'w':
+                                    enemy.phase = 3
+                                    enemy.liteUpdate()
+                                case 'e':
+                                    enemy.phase = 4
+                                    enemy.liteUpdate()
+                                case 'r':
+                                    enemy.phase = 5
+                                    enemy.liteUpdate()
+
                     if j in 'йцукен':
                         if not notes[i]['done']:
                             if cord(i[0], t) + 100 < 75:  # Таймаут
@@ -515,6 +549,7 @@ def level(settings, level):
         clock.tick(120)
         pygame.display.flip()
 
+
 def options(settings, musics):
     clock = pygame.time.Clock()
     def_background = pygame.image.load('data\\sprites\\default_room.png')
@@ -547,7 +582,6 @@ def options(settings, musics):
                                                               roundate(clock.get_time()/100, (0, 1)))))
 
         screen.blit(background, ((background.get_width() - WIDTH) / -2, (background.get_height() - HEIGHT) / -2))
-
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
