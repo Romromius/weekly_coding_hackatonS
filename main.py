@@ -1,7 +1,11 @@
 import copy
+
 import json
+
 import math
+
 import os
+
 import random
 
 import pygame
@@ -15,20 +19,37 @@ COLORS = {'q': 'cyan', 'w': 'green', 'e': 'red', 'r': 'yellow', 't': 'purple', '
           'й': 'cyan', 'ц': 'green', 'у': 'red', 'к': 'yellow', 'е': 'purple', 'н': 'blue'}
 SOUNDS = {}
 for i in os.listdir('data/sounds'):
-    SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data/sounds\\{i}')
+    SOUNDS[i[:-4]] = pygame.mixer.Sound(f'data/sounds/{i}')
+    print(SOUNDS)
 
 font = pygame.font.Font(None, 66)
 
 screen = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
-pygame.display.set_icon(pygame.image.load('icon.png'))
+pygame.display.set_icon(pygame.image.load('local_troubles/icon.png'))
 
+# Глобальные переменные
+sound_state = "1"
+difficulty_state = "Джун"
+# рекорды уровней
+record1 = 0
+record2 = 0
+record3 = 0
+record4 = 0
+
+# Ивенты
 start_event = pygame.USEREVENT + 1
 options_event = pygame.USEREVENT + 2
 back_event = pygame.USEREVENT + 3
 change_theme_event = pygame.USEREVENT + 4
 play_event = pygame.USEREVENT + 5
 bobepoo_event = pygame.USEREVENT + 6
+cat_event = pygame.USEREVENT + 7
+dog_event = pygame.USEREVENT + 8
+shark_event = pygame.USEREVENT + 9
+ScoreBoard_event = pygame.USEREVENT + 10
+change_sounds_event = pygame.USEREVENT + 11
+change_difficulty_event = pygame.USEREVENT + 12
 
 
 def count_score(x):
@@ -112,15 +133,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
 class Button:
     def __init__(self, x, y, w, h, text, event, align='center',
-                 image_path="data\\sprites\\empty.png",
-                 indic_path1="data\\sprites\\button_bckgrnd1.png",
-                 indic_path2="data\\sprites\\button_bckgrnd2.png",
+                 image_path="data/sprites/empty.png",
+                 indic_path1="data/sprites/button_bckgrnd1.png",
+                 indic_path2="data/sprites/button_bckgrnd2.png",
                  pref=None):
         self.x, self.y, self.w, self.h = x, y, w, h
         self.text = text
-        t = 0
-        self.phase = t
-        self.sp = [indic_path1, indic_path2]
+        self.fl = False
+        # self.sp = [indic_path1, indic_path2]
         self.align = align
         self.pref = pref
 
@@ -133,16 +153,20 @@ class Button:
         self.is_indic = False
         self.event = event
 
-        self.rolloversound = pygame.mixer.Sound('data\\sounds\\buttonrollover.wav')
-        self.clocksound = pygame.mixer.Sound('data\\sounds\\buttonclickrelease.wav')
+        self.rolloversound = pygame.mixer.Sound('local_troubles/data/sounds/buttonrollover.wav')
+        self.clocksound = pygame.mixer.Sound('local_troubles/data/sounds/buttonclickrelease.wav')
 
     def draw(self, surface):
         if self.is_indic:
-            img = pygame.image.load(self.sp[int(self.phase - 2 * (self.phase // 2))])
+            if self.fl:
+                img = self.indic_image1
+            if not self.fl:
+                img = self.indic_image2
+            # img = pygame.image.load(self.sp[int(self.phase - 2 * (self.phase // 2))])
+            self.fl = not self.fl
         else:
             img = self.image
         surface.blit(img, self.rect.topleft)
-
         text_surface = font.render(self.text, True, 'grey')
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
@@ -154,18 +178,40 @@ class Button:
 
     def click_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.is_indic:
-            self.clocksound.play()
+            if sound_state == "1":
+                print("ТЫК")
+                self.clocksound.play()
             print(f"Внимание! Была! Нажата! Кнопка! {self.text}!")
             pygame.event.post(pygame.event.Event(self.event, button=self))
 
 
+def welcome_window():
+    def_background = pygame.image.load('data/sprites/welcome_window_background.png')
+    screen.fill((100, 10, 100))
+    text = font.render("нажмите любую кнопку", 1, (255, 255, 0))
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                quit()
+            if any(pygame.key.get_pressed()) and not pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                return
+
+        screen.blit(def_background, (0, 0))
+        screen.blit(text, (0, 0))
+        pygame.display.flip()
+
+
 def main_menu():
+    global musics
     clock = pygame.time.Clock()
-    def_background = pygame.image.load('data\\sprites\\start_window_background.png')
+    def_background = pygame.image.load('data/sprites/start_window_background.png')
     background = def_background
     musics = ['menu_theme_1.wav|100', 'menu_theme_2.wav|100', 'menu_theme_3.wav|200']
 
-    with open('settings.json', 'r') as settings_file:
+    with open('local_troubles/settings.json', 'r') as settings_file:
         settings = json.load(settings_file)
         settings['bpm'] = int(musics[settings['theme']][musics[settings['theme']].index('|') + 1:])
 
@@ -194,13 +240,12 @@ def main_menu():
         background = pygame.transform.scale(def_background,
                                             (pygame.math.lerp(background.get_width(),
                                                               def_background.get_width() * scale,
-                                                              roundate(clock.get_time()/100, (0, 1))),
+                                                              roundate(clock.get_time() / 100, (0, 1))),
                                              pygame.math.lerp(background.get_height(),
                                                               def_background.get_height() * scale,
-                                                              roundate(clock.get_time()/100, (0, 1)))))
+                                                              roundate(clock.get_time() / 100, (0, 1)))))
 
         screen.blit(background, ((background.get_width() - WIDTH) / -2, (background.get_height() - HEIGHT) / -2))
-
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -210,6 +255,7 @@ def main_menu():
                 settings = options(settings, musics)
             if event.type == start_event:
                 freeplay(settings, musics)
+
             for i in buttons:
                 i.click_event(event)
 
@@ -217,22 +263,25 @@ def main_menu():
             i.check_indic(pygame.mouse.get_pos())
             i.draw(screen)
 
-
         clock.tick(120)
         pygame.display.flip()
 
 
 def freeplay(settings, musics):
     clock = pygame.time.Clock()
-    def_background = pygame.image.load('data\\sprites\\begin_window_background.png')
+    def_background = pygame.image.load('data/sprites/begin_window_background.png')
     background = def_background
     scale = 1.4
     t = 0
     phase = int(t * settings['bpm'] / 60)
 
-    bobepoo_button = Button(WIDTH / 3.5, HEIGHT / 5, 0, 0, "Bobepoo", bobepoo_event)
-    back_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "Назад", back_event)
-    buttons = [bobepoo_button, back_button]
+    botan_button = Button(WIDTH / 3.5, HEIGHT / 7, 0, 0, "Botan", bobepoo_event)
+    txt_bobepoo = font.render(str(record1), 1, "blue")
+    cat_button = Button(WIDTH / 3.5, HEIGHT / 3.5, 0, 0, "Kot", cat_event)
+    # dog_button = Button(WIDTH / 3.5, HEIGHT / 2.8, 0, 0, "", dog_event)
+    # shark_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "", shark_event)
+    back_button = Button(WIDTH / 3.5, HEIGHT / 1.2, 0, 0, "Назад", back_event)
+    buttons = [botan_button, cat_button, back_button]
 
     running = True
     while running:
@@ -247,13 +296,14 @@ def freeplay(settings, musics):
         background = pygame.transform.scale(def_background,
                                             (pygame.math.lerp(background.get_width(),
                                                               def_background.get_width() * scale,
-                                                              roundate(clock.get_time()/100, (0, 1))),
+                                                              roundate(clock.get_time() / 100, (0, 1))),
                                              pygame.math.lerp(background.get_height(),
                                                               def_background.get_height() * scale,
-                                                              roundate(clock.get_time()/100, (0, 1)))))
+                                                              roundate(clock.get_time() / 100, (0, 1)))))
 
         screen.blit(background, ((background.get_width() - WIDTH) / -2, (background.get_height() - HEIGHT) / -2))
-
+        txt_bobepoo = font.render(str(record1), 1, "blue")
+        screen.blit(txt_bobepoo, (720, 88))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -264,6 +314,9 @@ def freeplay(settings, musics):
                 return
 
             if event.type == bobepoo_event:
+                level(settings, 'Bobepoo')
+
+            if event.type == cat_event:
                 level(settings, 'Blammed')
 
             for i in buttons:
@@ -278,18 +331,21 @@ def freeplay(settings, musics):
 
 
 def level(settings, lvl):
+    global record1, record2, record3, record4
     pygame.mixer.music.stop()
+    pygame.mixer.stop()
     clock = pygame.time.Clock()
+
     # Load level
     music = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_music.ogg')
     voices = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_voices.ogg')
     with open(f'levels/{lvl}/{lvl}_labels.txt', 'r', encoding='utf-8') as lf:
         labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
-    with open(f'levels\\{lvl}\\{lvl}_params.json', 'r') as params_file:
+    with open(f'levels/{lvl}/{lvl}_params.json', 'r') as params_file:
         params = json.load(params_file)
-        background = Background(f'data\\sprites\\{params["BG"]}.png')
-        player = AnimatedSprite(pygame.image.load(f'data\\sprites\\{params["PLAYER"]}.png'), 3, 2, 800, 600, 1)
-        enemy = AnimatedSprite(pygame.image.load(f'data\\sprites\\{params["ENEMY"]}.png'), 3, 2, 0, 600, 1)
+        background = Background(f'data/sprites/{params["BG"]}.png')
+        player = AnimatedSprite(pygame.image.load(f'data/sprites/{params["PLAYER"]}.png'), 3, 2, 800, 600, 1)
+        enemy = AnimatedSprite(pygame.image.load(f'data/sprites/{params["ENEMY"]}.png'), 3, 2, 0, 600, 1)
     all_sprites = pygame.sprite.Group()
     all_sprites.add(player)
     all_sprites.add(enemy)
@@ -314,7 +370,7 @@ def level(settings, lvl):
         notes[(float(i[0]), float(i[1]))] = {'note': let, 'done': False}
 
     t = -2
-    play = False
+    # play = False
     player_input = set()
     input_list = set()
     score = 0
@@ -331,6 +387,43 @@ def level(settings, lvl):
     running = True
     play = True
     while running:
+        if score < -1000 or t > 78:  # ПРОИГРЫШ / КОНЧИЛОСЬ ВРЕМЯ
+            pygame.mixer.Channel(0).stop()
+            pygame.mixer.Channel(1).stop()
+            background = pygame.image.load('data/sprites/result.png')
+            txt_results = font.render("ТЕКУЩИЙ РЕКОРД: " + str(score), 1, "red")
+            back_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Назад", back_event)
+
+            running = True
+            while running:
+                screen.blit(background, (0, 0))
+                screen.blit(txt_results, (100, 100))
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        quit()
+                    if event.type == back_event:
+                        return
+                    back_button.click_event(event)
+
+                back_button.check_indic(pygame.mouse.get_pos())
+                back_button.draw(screen)
+
+                pygame.display.flip()
+            if score > 0:
+                match lvl:
+                    case "Bobepoo":
+                        record1 = max(record1, score)
+                    case 2:
+                        record2 = max(record2, score)
+                    case 3:
+                        record3 = max(record3, score)
+                    case 4:
+                        record4 = max(record4, score)
+
+            # pygame.mixer.music.load(f'data/sounds/{musics[settings["theme"]][:musics[settings["theme"]].index("|")]}')
+            pygame.mixer.music.play(loops=-1)
+            return
         last_phase = phase
         phase = int(t * params['BPM'] / 60)
         if phase != last_phase:
@@ -363,6 +456,8 @@ def level(settings, lvl):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                pygame.mixer.Channel(1).stop()
+                return
                 quit()
 
             # if event.type == pygame.KEYDOWN and event.dict['key'] == 32:
@@ -378,8 +473,6 @@ def level(settings, lvl):
 
             # Инпут
             if event.type == pygame.KEYDOWN:
-                player.phase = 0
-                player.update()
                 match event.dict['unicode']:
                     case 'q' | 'й':
                         player_input.add('й')
@@ -538,12 +631,15 @@ def level(settings, lvl):
                             case None:
                                 continue
                         if i[0] != i[1] and cord(i[1], t, params['BPM']) > 0:
-                            pygame.draw.line(screen, COLORS[j], (offset, roundate(cord(i[0], t, params['BPM']) + 100, (100, 1000))),
-                                             (offset, roundate(cord(i[1], t, params['BPM']) + 100, (100, 1000))), width=10)
+                            pygame.draw.line(screen, COLORS[j],
+                                             (offset, roundate(cord(i[0], t, params['BPM']) + 100, (100, 1000))),
+                                             (offset, roundate(cord(i[1], t, params['BPM']) + 100, (100, 1000))),
+                                             width=10)
                         if j:
                             if not notes[i]['done']:
                                 if cord(i[0], t, params['BPM']) + 100 > 75:
-                                    pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t, params['BPM']) + 100), 30)
+                                    pygame.draw.circle(screen, COLORS[j], (offset, cord(i[0], t, params['BPM']) + 100),
+                                                       30)
                                     letter = font.render(j.upper(), False, 'black')
                                     screen.blit(letter, (offset - 20, cord(i[0], t, params['BPM']) + 100 - 25))
         time_surface = font.render(str(round(t, 2)), False, 'grey')
@@ -560,17 +656,22 @@ def level(settings, lvl):
 
 
 def options(settings, musics):
+    global difficulty_state, sound_state
+    txt_diff = font.render(difficulty_state, 1, "grey")
+    txt_sound = font.render(sound_state, 1, "grey")
+
     clock = pygame.time.Clock()
-    def_background = pygame.image.load('data\\sprites\\default_room.png')
+    def_background = pygame.image.load('data/sprites/default_room.png')
     background = def_background
     scale = 1.4
     t = 0
     phase = int(t * settings['bpm'] / 60)
 
-    start_button = Button(WIDTH / 3.5, HEIGHT / 5, 0, 0, "Сменить тему", change_theme_event)
-    options_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Ничего не делать", pygame.USEREVENT)
-    back_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "Назад", back_event)
-    buttons = [start_button, options_button, back_button]
+    start_button = Button(WIDTH / 3.5, HEIGHT / 6, 0, 0, "Сменить тему", change_theme_event)
+    difficulty_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Слож-сть:", change_difficulty_event)
+    sounds_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "Звуки:", change_sounds_event)
+    back_button = Button(WIDTH / 3.5, HEIGHT / 1.2, 0, 0, "Назад", back_event)
+    buttons = [start_button, difficulty_button, sounds_button, back_button]
 
     running = True
     while running:
@@ -585,12 +686,14 @@ def options(settings, musics):
         background = pygame.transform.scale(def_background,
                                             (pygame.math.lerp(background.get_width(),
                                                               def_background.get_width() * scale,
-                                                              roundate(clock.get_time()/100, (0, 1))),
+                                                              roundate(clock.get_time() / 100, (0, 1))),
                                              pygame.math.lerp(background.get_height(),
                                                               def_background.get_height() * scale,
-                                                              roundate(clock.get_time()/100, (0, 1)))))
+                                                              roundate(clock.get_time() / 100, (0, 1)))))
 
         screen.blit(background, ((background.get_width() - WIDTH) / -2, (background.get_height() - HEIGHT) / -2))
+        screen.blit(txt_diff, (620, 200))
+        screen.blit(txt_sound, (620, 300))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -600,12 +703,26 @@ def options(settings, musics):
             if event.type == back_event:
                 return settings
 
+            if event.type == change_difficulty_event:
+                if difficulty_state == "Джун":
+                    difficulty_state = "Сеньор"
+                else:
+                    difficulty_state = "Джун"
+                txt_diff = font.render(difficulty_state, 1, "grey")
+
+            if event.type == change_sounds_event:
+                if sound_state == "1":
+                    sound_state = "0"
+                else:
+                    sound_state = "1"
+                txt_sound = font.render(sound_state, 1, "grey")
+
             if event.type == change_theme_event:
                 settings['theme'] += 1
                 if settings['theme'] > len(musics) - 1:
                     settings['theme'] = 0
                 settings['bpm'] = int(musics[settings["theme"]][musics[settings["theme"]].index("|") + 1:])
-                with open('settings.json', 'w') as settings_file:
+                with open('local_troubles/settings.json', 'w') as settings_file:
                     json.dump(settings, settings_file)
                 pygame.mixer.music.load(
                     f'data/sounds/{musics[settings["theme"]][:musics[settings["theme"]].index("|")]}')
@@ -618,9 +735,12 @@ def options(settings, musics):
             i.check_indic(pygame.mouse.get_pos())
             i.draw(screen)
 
-
         clock.tick(120)
         pygame.display.flip()
 
+
+
+
 if __name__ == '__main__':
+    welcome_window()
     main_menu()
