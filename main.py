@@ -264,7 +264,7 @@ def freeplay(settings, musics):
                 return
 
             if event.type == bobepoo_event:
-                level(settings, 'Philly')
+                level(settings, 'Blammed')
 
             for i in buttons:
                 i.click_event(event)
@@ -378,6 +378,8 @@ def level(settings, lvl):
 
             # Инпут
             if event.type == pygame.KEYDOWN:
+                player.phase = 0
+                player.update()
                 match event.dict['unicode']:
                     case 'q' | 'й':
                         player_input.add('й')
