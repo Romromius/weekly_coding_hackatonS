@@ -10,6 +10,8 @@ import random
 
 import pygame
 
+import sqlite3
+
 pygame.init()
 
 # Константы
@@ -36,6 +38,9 @@ record1 = 0
 record2 = 0
 record3 = 0
 record4 = 0
+# БАЗА
+db = sqlite3.connect('database_records.sqlite3')
+cursor = db.cursor()
 
 # Ивенты
 start_event = pygame.USEREVENT + 1
@@ -276,7 +281,7 @@ def freeplay(settings, musics):
     phase = int(t * settings['bpm'] / 60)
 
     botan_button = Button(WIDTH / 3.5, HEIGHT / 7, 0, 0, "Botan", bobepoo_event)
-    txt_bobepoo = font.render(str(record1), 1, "blue")
+    record = font.render(str(record1), 1, "blue")
     cat_button = Button(WIDTH / 3.5, HEIGHT / 3.5, 0, 0, "Kot", cat_event)
     dog_button = Button(WIDTH / 3.5, HEIGHT / 2.8, 0, 0, "Sobala", dog_event)
     # shark_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "", shark_event)
@@ -326,8 +331,10 @@ def freeplay(settings, musics):
             for i in buttons:
                 i.click_event(event)
 
+
         for i in buttons:
             i.check_indic(pygame.mouse.get_pos())
+
             i.draw(screen)
 
         clock.tick(120)
@@ -625,6 +632,7 @@ def level(settings, lvl):
             background = pygame.image.load('data/sprites/result.png')
             txt_results = font.render("ТЕКУЩИЙ РЕКОРД: " + str(score), 1, "red")
             back_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Назад", back_event)
+            cursor.execute(f'SELECT * FROM records WHERE level={str(lvl)}')
 
             running = True
             while running:
