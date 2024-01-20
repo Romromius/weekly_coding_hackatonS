@@ -209,7 +209,7 @@ def main_menu():
     clock = pygame.time.Clock()
     def_background = pygame.image.load('data/sprites/start_window_background.png')
     background = def_background
-    musics = ['menu_theme_1.wav|100', 'menu_theme_2.wav|100', 'menu_theme_3.wav|200']
+    musics = ['menu_theme_1.mp3|50', 'menu_theme_2.wav|100', 'menu_theme_3.wav|200']
 
     with open('local_troubles/settings.json', 'r') as settings_file:
         settings = json.load(settings_file)
@@ -278,10 +278,11 @@ def freeplay(settings, musics):
     botan_button = Button(WIDTH / 3.5, HEIGHT / 7, 0, 0, "Botan", bobepoo_event)
     txt_bobepoo = font.render(str(record1), 1, "blue")
     cat_button = Button(WIDTH / 3.5, HEIGHT / 3.5, 0, 0, "Kot", cat_event)
-    # dog_button = Button(WIDTH / 3.5, HEIGHT / 2.8, 0, 0, "", dog_event)
+    dog_button = Button(WIDTH / 3.5, HEIGHT / 2.8, 0, 0, "Sobala", dog_event)
     # shark_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "", shark_event)
     back_button = Button(WIDTH / 3.5, HEIGHT / 1.2, 0, 0, "Назад", back_event)
-    buttons = [botan_button, cat_button, back_button]
+
+    buttons = [botan_button, cat_button, dog_button, back_button]
 
     running = True
     while running:
@@ -318,6 +319,9 @@ def freeplay(settings, musics):
 
             if event.type == cat_event:
                 level(settings, 'Blammed')
+
+            if event.type == dog_event:
+                level(settings, 'Thorns')
 
             for i in buttons:
                 i.click_event(event)
@@ -386,44 +390,9 @@ def level(settings, lvl):
 
     running = True
     play = True
+    playing = False
     while running:
-        if score < -1000 or t > 78:  # ПРОИГРЫШ / КОНЧИЛОСЬ ВРЕМЯ
-            pygame.mixer.Channel(0).stop()
-            pygame.mixer.Channel(1).stop()
-            background = pygame.image.load('data/sprites/result.png')
-            txt_results = font.render("ТЕКУЩИЙ РЕКОРД: " + str(score), 1, "red")
-            back_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Назад", back_event)
 
-            running = True
-            while running:
-                screen.blit(background, (0, 0))
-                screen.blit(txt_results, (100, 100))
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                        quit()
-                    if event.type == back_event:
-                        return
-                    back_button.click_event(event)
-
-                back_button.check_indic(pygame.mouse.get_pos())
-                back_button.draw(screen)
-
-                pygame.display.flip()
-            if score > 0:
-                match lvl:
-                    case "Bobepoo":
-                        record1 = max(record1, score)
-                    case 2:
-                        record2 = max(record2, score)
-                    case 3:
-                        record3 = max(record3, score)
-                    case 4:
-                        record4 = max(record4, score)
-
-            # pygame.mixer.music.load(f'data/sounds/{musics[settings["theme"]][:musics[settings["theme"]].index("|")]}')
-            pygame.mixer.music.play(loops=-1)
-            return
         last_phase = phase
         phase = int(t * params['BPM'] / 60)
         if phase != last_phase:
@@ -458,7 +427,6 @@ def level(settings, lvl):
                 running = False
                 pygame.mixer.Channel(1).stop()
                 return
-                quit()
 
             # if event.type == pygame.KEYDOWN and event.dict['key'] == 32:
             #     play = not play
@@ -505,10 +473,10 @@ def level(settings, lvl):
                         input_list.remove('у')
                     case 'r' | 'к':
                         input_list.remove('к')
-
-        if t >= 0 and not pygame.mixer.Channel(0).get_busy():
+        if t >= 0 and not pygame.mixer.Channel(0).get_busy() and not playing:
             pygame.mixer.Channel(0).play(music)
             pygame.mixer.Channel(1).play(voices)
+            playing = True
         pygame.mixer.Channel(1).set_volume(voice_vol)
         if do_voice:
             voice_vol = 1
@@ -650,6 +618,44 @@ def level(settings, lvl):
             mark_par.update(clock.get_time())
             mark_par.render(screen)
         player_input.clear()
+        if score < -1000 or not pygame.mixer.Channel(0).get_busy():  # ПРОИГРЫШ / КОНЧИЛОСЬ ВРЕМЯ
+            pygame.mixer.Channel(0).stop()
+            pygame.mixer.Channel(1).stop()
+            pygame.mixer.music.play(loops=-1)
+            background = pygame.image.load('data/sprites/result.png')
+            txt_results = font.render("ТЕКУЩИЙ РЕКОРД: " + str(score), 1, "red")
+            back_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Назад", back_event)
+
+            running = True
+            while running:
+                screen.blit(background, (0, 0))
+                screen.blit(txt_results, (100, 100))
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        quit()
+                    if event.type == back_event:
+                        return
+                    back_button.click_event(event)
+
+                back_button.check_indic(pygame.mouse.get_pos())
+                back_button.draw(screen)
+
+                pygame.display.flip()
+            if score > 0:
+                match lvl:
+                    case "Bobepoo":
+                        record1 = max(record1, score)
+                    case 2:
+                        record2 = max(record2, score)
+                    case 3:
+                        record3 = max(record3, score)
+                    case 4:
+                        record4 = max(record4, score)
+
+            # pygame.mixer.music.load(f'data/sounds/{musics[settings["theme"]][:musics[settings["theme"]].index("|")]}')
+            pygame.mixer.music.play(loops=-1)
+            return
 
         clock.tick(120)
         pygame.display.flip()
@@ -718,6 +724,7 @@ def options(settings, musics):
                 txt_sound = font.render(sound_state, 1, "grey")
 
             if event.type == change_theme_event:
+                pygame.mixer.stop()
                 settings['theme'] += 1
                 if settings['theme'] > len(musics) - 1:
                     settings['theme'] = 0
@@ -737,8 +744,6 @@ def options(settings, musics):
 
         clock.tick(120)
         pygame.display.flip()
-
-
 
 
 if __name__ == '__main__':
