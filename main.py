@@ -1,8 +1,4 @@
-import copy
-
 import json
-
-import math
 
 import os
 
@@ -33,14 +29,6 @@ pygame.display.set_icon(pygame.image.load('local_troubles/icon.png'))
 # Глобальные переменные
 sound_state = "1"
 difficulty_state = "Джун"
-# рекорды уровней
-record1 = 0
-record2 = 0
-record3 = 0
-record4 = 0
-# БАЗА
-db = sqlite3.connect('database_records.sqlite3')
-cursor = db.cursor()
 
 # Ивенты
 start_event = pygame.USEREVENT + 1
@@ -86,7 +74,6 @@ class Background(pygame.sprite.Sprite):
 
 
 class ParticleText():
-
     def __init__(self, pos, dx, dy, text, color='white', size=50):
         self.font = pygame.font.SysFont('Comic Sans MS', size)
         self.text = text
@@ -280,14 +267,12 @@ def freeplay(settings, musics):
     t = 0
     phase = int(t * settings['bpm'] / 60)
 
-    botan_button = Button(WIDTH / 3.5, HEIGHT / 7, 0, 0, "Botan", bobepoo_event)
-    record = font.render(str(record1), 1, "blue")
-    cat_button = Button(WIDTH / 3.5, HEIGHT / 3.5, 0, 0, "Kot", cat_event)
-    dog_button = Button(WIDTH / 3.5, HEIGHT / 2.8, 0, 0, "Sobala", dog_event)
-    # shark_button = Button(WIDTH / 3.5, HEIGHT / 2, 0, 0, "", shark_event)
-    back_button = Button(WIDTH / 3.5, HEIGHT / 1.2, 0, 0, "Назад", back_event)
-
-    buttons = [botan_button, cat_button, dog_button, back_button]
+    botan_button = Button(200, 60, 0, 0, "Botan", bobepoo_event)
+    kot_button = Button(200, 160, 0, 0, "Kot", cat_event)
+    sobaka_button = Button(200, 260, 0, 0, "Sobaka", dog_event)
+    akula_button = Button(200, 360, 0, 0, "Akula", shark_event)
+    back_button = Button(200, 500, 0, 0, "Назад", back_event)
+    buttons = [botan_button, kot_button, sobaka_button, back_button, akula_button]
 
     running = True
     while running:
@@ -308,8 +293,22 @@ def freeplay(settings, musics):
                                                               roundate(clock.get_time() / 100, (0, 1)))))
 
         screen.blit(background, ((background.get_width() - WIDTH) / -2, (background.get_height() - HEIGHT) / -2))
-        txt_bobepoo = font.render(str(record1), 1, "blue")
-        screen.blit(txt_bobepoo, (720, 88))
+
+        # РЕКОРДЫ ОТРИСОВКА
+        with sqlite3.connect("database.sqlite3") as db:
+            cur = db.cursor()
+            record1 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Botan", )).fetchall()[0][0]
+            record2 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Kot",)).fetchall()[0][0]
+            record3 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Sobaka",)).fetchall()[0][0]
+            record4 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Akula",)).fetchall()[0][0]
+            txt_botan = font.render(str(record1), 1, "blue")
+            txt_kot = font.render(str(record2), 1, "blue")
+            txt_sobaka = font.render(str(record3), 1, "blue")
+            txt_akula = font.render(str(record4), 1, "blue")
+        screen.blit(txt_botan, (620, 60))
+        screen.blit(txt_kot, (620, 160))
+        screen.blit(txt_sobaka, (620, 260))
+        screen.blit(txt_akula, (620, 360))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -320,21 +319,19 @@ def freeplay(settings, musics):
                 return
 
             if event.type == bobepoo_event:
-                level(settings, 'Bobepoo')
+                level(settings, 'Botan')
 
             if event.type == cat_event:
-                level(settings, 'Blammed')
+                level(settings, 'Kot')
 
             if event.type == dog_event:
-                level(settings, 'Thorns')
+                level(settings, 'Sobaka')
 
             for i in buttons:
                 i.click_event(event)
 
-
-        for i in buttons:
+        for i in buttons:  # ПРОРИСОВКА КНОПОК
             i.check_indic(pygame.mouse.get_pos())
-
             i.draw(screen)
 
         clock.tick(120)
@@ -342,7 +339,6 @@ def freeplay(settings, musics):
 
 
 def level(settings, lvl):
-    global record1, record2, record3, record4
     pygame.mixer.music.stop()
     pygame.mixer.stop()
     clock = pygame.time.Clock()
@@ -350,8 +346,16 @@ def level(settings, lvl):
     # Load level
     music = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_music.ogg')
     voices = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_voices.ogg')
-    with open(f'levels/{lvl}/{lvl}_labels.txt', 'r', encoding='utf-8') as lf:
-        labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
+    # Chek difficulty
+    if difficulty_state == "Джун":
+        print("ЛЕГКО!")
+        with open(f'levels/{lvl}/{lvl}_labels.txt', 'r', encoding='utf-8') as lf:
+            labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
+    else:
+        print("СЛОЖНА!")
+        with open(f'levels/{lvl}/{lvl}_labels_hard.txt', 'r', encoding='utf-8') as lf:
+            labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
+
     with open(f'levels/{lvl}/{lvl}_params.json', 'r') as params_file:
         params = json.load(params_file)
         background = Background(f'data/sprites/{params["BG"]}.png')
@@ -632,7 +636,11 @@ def level(settings, lvl):
             background = pygame.image.load('data/sprites/result.png')
             txt_results = font.render("ТЕКУЩИЙ РЕКОРД: " + str(score), 1, "red")
             back_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Назад", back_event)
-            # cursor.execute(f'SELECT * FROM records WHERE level={str(lvl)}')
+            if score > 0:
+                with sqlite3.connect("database.sqlite3") as db:
+                    cur = db.cursor()
+                    a = cur.execute(f"""UPDATE records SET record='{score}' WHERE level='{lvl}' AND record < '{score}'""")
+                    db.commit()
 
             running = True
             while running:
@@ -650,18 +658,6 @@ def level(settings, lvl):
                 back_button.draw(screen)
 
                 pygame.display.flip()
-            if score > 0:
-                match lvl:
-                    case "Bobepoo":
-                        record1 = max(record1, score)
-                    case 2:
-                        record2 = max(record2, score)
-                    case 3:
-                        record3 = max(record3, score)
-                    case 4:
-                        record4 = max(record4, score)
-
-            # pygame.mixer.music.load(f'data/sounds/{musics[settings["theme"]][:musics[settings["theme"]].index("|")]}')
             pygame.mixer.music.play(loops=-1)
             return
 
