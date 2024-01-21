@@ -632,7 +632,7 @@ def level(settings, lvl):
             background = pygame.image.load('data/sprites/result.png')
             txt_results = font.render("ТЕКУЩИЙ РЕКОРД: " + str(score), 1, "red")
             back_button = Button(WIDTH / 3.5, HEIGHT / 3, 0, 0, "Назад", back_event)
-            cursor.execute(f'SELECT * FROM records WHERE level={str(lvl)}')
+            # cursor.execute(f'SELECT * FROM records WHERE level={str(lvl)}')
 
             running = True
             while running:
