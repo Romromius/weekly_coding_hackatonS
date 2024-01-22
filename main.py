@@ -10,6 +10,12 @@ import sqlite3
 
 pygame.init()
 
+# чистим рекорды
+# with sqlite3.connect("database.sqlite3") as db:
+#     cur = db.cursor()
+#     a = cur.execute(f"""UPDATE records SET record=0""")
+#     db.commit()
+
 # Константы
 RESOLUTION = WIDTH, HEIGHT = 800, 600
 GRAVITY = 9.8
@@ -297,7 +303,7 @@ def freeplay(settings, musics):
         # РЕКОРДЫ ОТРИСОВКА
         with sqlite3.connect("database.sqlite3") as db:
             cur = db.cursor()
-            record1 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Botan", )).fetchall()[0][0]
+            record1 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Botan",)).fetchall()[0][0]
             record2 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Kot",)).fetchall()[0][0]
             record3 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Sobaka",)).fetchall()[0][0]
             record4 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Akula",)).fetchall()[0][0]
@@ -348,11 +354,9 @@ def level(settings, lvl):
     voices = pygame.mixer.Sound(f'levels/{lvl}/{lvl}_voices.ogg')
     # Chek difficulty
     if difficulty_state == "Джун":
-        print("ЛЕГКО!")
         with open(f'levels/{lvl}/{lvl}_labels.txt', 'r', encoding='utf-8') as lf:
             labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
     else:
-        print("СЛОЖНА!")
         with open(f'levels/{lvl}/{lvl}_labels_hard.txt', 'r', encoding='utf-8') as lf:
             labels = [i.split('\t') for i in lf.read().split('\n')][:-1]
 
@@ -365,11 +369,13 @@ def level(settings, lvl):
     all_sprites.add(player)
     all_sprites.add(enemy)
     notes = {}
+    end = 0
 
     read_pl = False
     for i in labels:
         let = i[-1]
         if let == '|':
+            end = int(float(i[0])) + 2
             read_pl = True
             continue
         if read_pl:
@@ -385,7 +391,6 @@ def level(settings, lvl):
         notes[(float(i[0]), float(i[1]))] = {'note': let, 'done': False}
 
     t = -2
-    # play = False
     player_input = set()
     input_list = set()
     score = 0
@@ -484,7 +489,7 @@ def level(settings, lvl):
                         input_list.remove('у')
                     case 'r' | 'к':
                         input_list.remove('к')
-        if t >= 0 and not pygame.mixer.Channel(0).get_busy() and not playing:
+        if not pygame.mixer.Channel(0).get_busy() and not playing:
             pygame.mixer.Channel(0).play(music)
             pygame.mixer.Channel(1).play(voices)
             playing = True
@@ -629,7 +634,7 @@ def level(settings, lvl):
             mark_par.update(clock.get_time())
             mark_par.render(screen)
         player_input.clear()
-        if score < -1000 or not pygame.mixer.Channel(0).get_busy():  # ПРОИГРЫШ / КОНЧИЛОСЬ ВРЕМЯ
+        if score < -1000 or t >= end:  # ПРОИГРЫШ / КОНЧИЛОСЬ ВРЕМЯ
             pygame.mixer.Channel(0).stop()
             pygame.mixer.Channel(1).stop()
             pygame.mixer.music.play(loops=-1)
@@ -639,7 +644,7 @@ def level(settings, lvl):
             if score > 0:
                 with sqlite3.connect("database.sqlite3") as db:
                     cur = db.cursor()
-                    a = cur.execute(f"""UPDATE records SET record='{score}' WHERE level='{lvl}' AND record < '{score}'""")
+                    cur.execute(f"""UPDATE records SET record='{score}' WHERE level='{lvl}' AND record < '{score}'""")
                     db.commit()
 
             running = True
