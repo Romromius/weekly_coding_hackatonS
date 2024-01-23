@@ -39,7 +39,7 @@ def load_level(level):
             # TODO: enemy = ...
     # except FileNotFoundError:
     #     background = Background('data\\sprites\\default_room.png')
-    #     player = AnimatedSprite(pygame.image.load(f'data\\sprites\\missed_image.png'), 1, 1, HEIGHT / 2, WIDTH - 100)
+    #     player = AnimatedSprite(pygame.image.load(f'data\\sprites\\error.png'), 1, 1, HEIGHT / 2, WIDTH - 100)
 
 
     notes = {}

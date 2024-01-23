@@ -333,6 +333,9 @@ def freeplay(settings, musics):
             if event.type == dog_event:
                 level(settings, 'Sobaka')
 
+            if event.type == shark_event:
+                level(settings, 'Akula')
+
             for i in buttons:
                 i.click_event(event)
 
