@@ -303,18 +303,44 @@ def freeplay(settings, musics):
         # РЕКОРДЫ ОТРИСОВКА
         with sqlite3.connect("database.sqlite3") as db:
             cur = db.cursor()
-            record1 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Botan",)).fetchall()[0][0]
-            record2 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Kot",)).fetchall()[0][0]
-            record3 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Sobaka",)).fetchall()[0][0]
-            record4 = cur.execute("""SELECT record FROM records WHERE level=?""", ("Akula",)).fetchall()[0][0]
-            txt_botan = font.render(str(record1), 1, "blue")
-            txt_kot = font.render(str(record2), 1, "blue")
-            txt_sobaka = font.render(str(record3), 1, "blue")
-            txt_akula = font.render(str(record4), 1, "blue")
-        screen.blit(txt_botan, (620, 60))
-        screen.blit(txt_kot, (620, 160))
-        screen.blit(txt_sobaka, (620, 260))
-        screen.blit(txt_akula, (620, 360))
+            record1 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Botan", "Junior",)).fetchall()[0][0]
+            record2 = \
+            cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""", ("Kot", "Junior",)).fetchall()[
+                0][0]
+            record3 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Sobaka", "Junior",)).fetchall()[0][0]
+            record4 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Akula", "Junior",)).fetchall()[0][0]
+            
+            txt_botan_junior = font.render(str(record1), 1, "blue")
+            txt_kot_junior = font.render(str(record2), 1, "blue")
+            txt_sobaka_junior = font.render(str(record3), 1, "blue")
+            txt_akula_junior = font.render(str(record4), 1, "blue")
+            
+            screen.blit(txt_botan_junior, (620, 60))
+            screen.blit(txt_kot_junior, (620, 160))
+            screen.blit(txt_sobaka_junior, (620, 260))
+            screen.blit(txt_akula_junior, (620, 360))
+            
+            record5 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Botan", "Senior",)).fetchall()[0][0]
+            record6 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Kot", "Senior",)).fetchall()[0][0]
+            record7 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Sobaka", "Senior",)).fetchall()[0][0]
+            record8 = cur.execute("""SELECT record FROM records WHERE level=? AND difficulty=?""",
+                                  ("Akula", "Senior",)).fetchall()[0][0]
+
+            txt_botan_senior = font.render(str(record5), 1, "red")
+            txt_kot_senior = font.render(str(record6), 1, "red")
+            txt_sobaka_senior = font.render(str(record7), 1, "red")
+            txt_akula_senior = font.render(str(record8), 1, "red")
+    
+            screen.blit(txt_botan_senior, (120, 60))
+            screen.blit(txt_kot_senior, (120, 160))
+            screen.blit(txt_sobaka_senior, (120, 260))
+            screen.blit(txt_akula_senior, (120, 360))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -647,7 +673,12 @@ def level(settings, lvl):
             if score > 0:
                 with sqlite3.connect("database.sqlite3") as db:
                     cur = db.cursor()
-                    cur.execute(f"""UPDATE records SET record='{score}' WHERE level='{lvl}' AND record < '{score}'""")
+                    if difficulty_state == "Джун":
+                        cur.execute(f"""UPDATE records SET record='{score}' WHERE level='{lvl}' AND difficulty 
+                        ='Junior' AND record < '{score}'""")
+                    if difficulty_state == "Сеньор":
+                        cur.execute(f"""UPDATE records SET record='{score}' WHERE level='{lvl}' AND difficulty
+                        ='Senior' AND record < '{score}'""")
                     db.commit()
 
             running = True
